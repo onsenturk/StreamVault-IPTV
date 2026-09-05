@@ -18,15 +18,21 @@ dependencies {
     kover(project(":player"))
 }
 
+// Ceilings for the accepted lint backlog, keyed by baseline file. `verifyLintBaseline`
+// fails if a baseline grows past its ceiling, so new warnings must be fixed rather than
+// baselined. When you burn issues down, lower the matching number here in the same commit.
+val lintBaselineCeilings = mapOf(
+    "app/lint-baseline.xml" to 1560,
+    "data/lint-baseline.xml" to 18,
+    "player/lint-baseline.xml" to 9
+)
+
 tasks.register("verifyLintBaseline") {
     group = "verification"
-    description = "Verifies that the committed lint baseline is present and non-empty."
+    description =
+        "Verifies the committed lint baselines are present, non-empty, and no larger than their recorded ceilings."
     doLast {
-        val baselinePaths = listOf(
-            "app/lint-baseline.xml",
-            "data/lint-baseline.xml",
-            "player/lint-baseline.xml"
-        )
+        val baselinePaths = lintBaselineCeilings.keys.toList()
         val issuePattern = Regex("""<issue(?:\s|>)""")
         val issueIdPattern = Regex("""<issue\b[^>]*\bid=\"([^\"]+)\"""")
 
@@ -55,6 +61,21 @@ tasks.register("verifyLintBaseline") {
             // change from silently deleting the accepted backlog to make CI green.
             check("by=\"lint " in content) {
                 "Lint baseline must retain the generated marker for reviewability: $path"
+            }
+
+            // Ratchet: the backlog may shrink freely, but growing it requires an explicit,
+            // reviewable bump of the ceiling above.
+            val ceiling = lintBaselineCeilings.getValue(path)
+            check(issueCount <= ceiling) {
+                "Lint baseline grew from at most $ceiling to $issueCount issues: $path. " +
+                    "Fix the new warnings instead of baselining them, or raise the ceiling in " +
+                    "build.gradle.kts with justification."
+            }
+            if (issueCount < ceiling) {
+                println(
+                    "$path is ${ceiling - issueCount} issues below its ceiling of $ceiling; " +
+                        "lower lintBaselineCeilings in build.gradle.kts to lock the improvement in."
+                )
             }
         }
     }

@@ -132,8 +132,9 @@ android {
             if (keystorePropertiesFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")
             }
-            // The bundled FFmpeg decoder ships native code; keep symbol tables so
-            // Play Console / ndk-stack can resolve native crash frames.
+            // Retains native symbol tables when an app bundle is produced. The
+            // current pipeline ships APKs, where this is a no-op, but it means a
+            // future bundle build symbolicates the FFmpeg decoder's native frames.
             ndk {
                 debugSymbolLevel = "SYMBOL_TABLE"
             }

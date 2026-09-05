@@ -6,7 +6,7 @@
 	<a href="https://github.com/Davidona/StreamVault-IPTV/releases"><img src="https://img.shields.io/github/downloads/Davidona/StreamVault-IPTV/total?style=for-the-badge&color=8b5cf6" alt="Total Downloads" /></a>
 	<a href="https://discord.gg/eGPBMygcb"><img src="https://img.shields.io/badge/Discord-Join%20Server-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join the StreamVault Discord" /></a>
 	<a href="docs/CHANGELOG.md"><img src="https://img.shields.io/badge/Changelog-View-2563eb?style=for-the-badge" alt="View changelog" /></a>
-	<a href="https://github.com/Davidona/StreamVault-IPTV/actions/workflows/release.yml"><img src="https://img.shields.io/github/actions/workflow/status/Davidona/StreamVault-IPTV/release.yml?branch=master&style=for-the-badge&label=CI" alt="GitHub Actions status" /></a>
+	<a href="https://github.com/Davidona/StreamVault-IPTV/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Davidona/StreamVault-IPTV/ci.yml?branch=master&style=for-the-badge&label=CI" alt="GitHub Actions status" /></a>
 	<a href="https://ko-fi.com/davidona"><img src="https://img.shields.io/badge/Support-Ko--fi-ff5f5f?style=for-the-badge&logo=kofi" alt="Support on Ko-fi" /></a>
 	<a href="LICENSE"><img src="https://img.shields.io/badge/License-StreamVault_OSL-0284c7?style=for-the-badge" alt="License" /></a>
 </p>
@@ -197,6 +197,20 @@ Useful commands:
 ./gradlew assembleRelease
 ./gradlew testDebugUnitTest
 ```
+
+To reproduce the checks CI runs on every pull request:
+
+```bash
+./gradlew testDebugUnitTest \
+  :app:lintDebug :data:lintDebug :player:lintDebug \
+  verifyLintBaseline \
+  koverXmlReportCi koverHtmlReportCi
+```
+
+`verifyLintBaseline` ratchets the committed lint baselines: they may shrink
+freely, but growing one fails the build. If you legitimately need to accept a new
+warning, raise the matching entry in `lintBaselineCeilings` in the root
+`build.gradle.kts` in the same commit so the change is reviewable.
 
 ## Notes
 
