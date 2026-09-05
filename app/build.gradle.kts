@@ -132,6 +132,25 @@ android {
             if (keystorePropertiesFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")
             }
+            // The bundled FFmpeg decoder ships native code; keep symbol tables so
+            // Play Console / ndk-stack can resolve native crash frames.
+            ndk {
+                debugSymbolLevel = "SYMBOL_TABLE"
+            }
+        }
+    }
+
+    packaging {
+        resources {
+            // Build-time artifacts only. License/NOTICE metadata is deliberately
+            // left in the APK: the bundled FFmpeg decoder is LGPL and its notices
+            // must ship with the binary (see docs/FFMPEG-LGPL-NOTICE.md).
+            excludes += setOf(
+                "DebugProbesKt.bin",
+                "kotlin-tooling-metadata.json",
+                "META-INF/versions/9/previous-compilation-data.bin",
+                "META-INF/com.android.tools/**"
+            )
         }
     }
 

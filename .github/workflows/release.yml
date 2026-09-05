@@ -6,6 +6,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -40,7 +44,6 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: gradle
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -78,13 +81,13 @@ jobs:
           done
 
       - name: Run unit tests, lint, and coverage
-        run: ./gradlew --console=plain testDebugUnitTest :app:lintDebug :data:lintDebug :player:lintDebug verifyLintBaseline koverXmlReportCi koverHtmlReportCi
+        run: ./gradlew --console=plain --parallel --build-cache testDebugUnitTest :app:lintDebug :data:lintDebug :player:lintDebug verifyLintBaseline koverXmlReportCi koverHtmlReportCi
 
       - name: Compile instrumentation release gates
-        run: ./gradlew --console=plain :app:assembleDebugAndroidTest :data:assembleDebugAndroidTest
+        run: ./gradlew --console=plain --parallel --build-cache :app:assembleDebugAndroidTest :data:assembleDebugAndroidTest
 
       - name: Build release APK
-        run: ./gradlew --console=plain :app:assembleRelease
+        run: ./gradlew --console=plain --parallel --build-cache :app:assembleRelease
 
       - name: Prepare release artifact
         if: github.event_name == 'workflow_dispatch'
@@ -178,7 +181,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           tag_name: ${{ steps.app_version.outputs.release_tag }}
           name: StreamVault ${{ steps.app_version.outputs.version_name }}

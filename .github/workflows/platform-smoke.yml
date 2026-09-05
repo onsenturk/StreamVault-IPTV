@@ -83,7 +83,7 @@ jobs:
           test -w /dev/kvm
 
       - name: Run compatibility instrumentation suite
-        uses: reactivecircus/android-emulator-runner@v2
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
         with:
           api-level: ${{ matrix.api-level }}
           arch: ${{ matrix.arch }}

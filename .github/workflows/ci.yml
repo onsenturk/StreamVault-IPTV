@@ -1,0 +1,92 @@
+name: CI
+
+# The release workflow is workflow_dispatch-only, so before this workflow existed
+# nothing verified pull requests or the long-lived branches. This runs the same
+# test/lint/coverage gate that `release.yml` runs, on every PR and push.
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - develop
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Unit tests, lint and coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/master' && github.ref != 'refs/heads/develop' }}
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Test CI helper scripts
+        shell: bash
+        run: |
+          for test_script in tools/tests/*-test.sh; do
+            bash "$test_script"
+          done
+
+      - name: Run unit tests, lint, and coverage
+        run: >-
+          ./gradlew --console=plain --parallel --build-cache
+          testDebugUnitTest
+          :app:lintDebug :data:lintDebug :player:lintDebug
+          verifyLintBaseline
+          koverXmlReportCi koverHtmlReportCi
+
+      - name: Compile instrumentation gates
+        run: >-
+          ./gradlew --console=plain --parallel --build-cache
+          :app:assembleDebugAndroidTest :data:assembleDebugAndroidTest
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            app/build/reports/tests/
+            data/build/reports/tests/
+            domain/build/reports/tests/
+            player/build/reports/tests/
+          if-no-files-found: ignore
+
+      - name: Upload lint reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-reports
+          path: |
+            app/build/reports/lint-results-*.html
+            data/build/reports/lint-results-*.html
+            player/build/reports/lint-results-*.html
+          if-no-files-found: ignore
+
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: build/reports/kover/
+          if-no-files-found: ignore

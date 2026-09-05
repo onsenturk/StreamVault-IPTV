@@ -79,6 +79,7 @@ docs/*-baseline.md
 tools/smoke_*.ps1
 
 # Build/test logs
-final_narrow_*.log
-gradle_*_test*.log
-gradle_*_rerun.log
+# Broad by design: the narrower patterns this replaces were added after the log
+# files were already tracked, so they never took effect. Nothing in this repo is
+# a checked-in .log file.
+*.log
