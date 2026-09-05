@@ -9,13 +9,15 @@ on:
 permissions:
   contents: write
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   build-beta:
     if: github.ref == 'refs/heads/develop'
+    # Scoped to this job only. `publish-beta` must not be cancellable: it creates
+    # a run-number-keyed tag and uploads APK assets, so cancelling mid-publish
+    # would leave a pre-release with partial assets that no later run overwrites.
+    concurrency:
+      group: ${{ github.workflow }}-build-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
 
     steps:
@@ -52,6 +54,11 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          # setup-gradle only writes the cache from the default branch, and this
+          # workflow only ever runs on `develop`. Without this the build cache
+          # enabled in gradle.properties would stay permanently cold here.
+          cache-read-only: false
 
       - name: Prepare optional signing files
         shell: bash
